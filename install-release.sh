@@ -2,11 +2,11 @@
 # One-command install of the prebuilt lookin-swift binary from GitHub Releases.
 # No Xcode / Swift toolchain needed.
 #
-#   curl -fsSL https://raw.githubusercontent.com/J-Jsen/Looin-swift-mcp/main/install-release.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/J-Jsen/Lookin-swift-mcp/main/install-release.sh | bash
 #
 set -euo pipefail
 
-REPO="J-Jsen/Looin-swift-mcp"
+REPO="J-Jsen/Lookin-swift-mcp"
 DEST="$HOME/.lookin-swift"
 BIN="$DEST/lookin-swift"
 URL="https://github.com/$REPO/releases/latest/download/lookin-swift"
