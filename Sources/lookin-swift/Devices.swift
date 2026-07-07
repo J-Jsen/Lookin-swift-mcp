@@ -46,6 +46,29 @@ final class DeviceSelection {
         }
     }
 
+    /// Connect to an arbitrary `port` on the current target (used for the
+    /// LookinServer-Control command channel on :47180).
+    func connectPort(_ port: Int) throws -> Int32 {
+        switch target {
+        case .simulator:
+            return try Peertalk.connect(host: "127.0.0.1", port: port)
+        case .device(let udid):
+            let devices = try UsbMux.listDevices()
+            guard let dev = devices.first(where: { $0.udid == udid }) else {
+                throw LookinError.message("USB device \(udid) not found.")
+            }
+            return try UsbMux.connectToDevice(deviceId: dev.deviceId, port: port)
+        case .auto:
+            if let fd = try? Peertalk.connect(host: "127.0.0.1", port: port) { return fd }
+            if let devices = try? UsbMux.listDevices() {
+                for dev in devices {
+                    if let fd = try? UsbMux.connectToDevice(deviceId: dev.deviceId, port: port) { return fd }
+                }
+            }
+            throw LookinError.message("Cannot reach port \(port). Is the app (with pod 'LookinServer-Control') running in the foreground?")
+        }
+    }
+
     // MARK: - Helpers
 
     private func connectSimulator() throws -> Int32 {

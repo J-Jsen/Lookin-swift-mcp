@@ -136,5 +136,73 @@ server.register(Tool(
     }
 ))
 
-FileHandle.standardError.write("[lookin-swift] started (LookinServer: simulator :47164-47169, USB device :47175-47179)\n".data(using: .utf8)!)
+// ── Control tools (require the LookinServer-Control pod in the app) ──
+
+server.register(Tool(
+    name: "lookin_tap",
+    description: "Tap at a point on screen (points, same coordinate space as the hierarchy frames). Injects a real touch via LookinServer-Control. Tap a control's frame center from lookin_get_hierarchy.",
+    inputSchema: [
+        "type": "object",
+        "properties": [
+            "x": ["type": "number", "description": "X in screen points"],
+            "y": ["type": "number", "description": "Y in screen points"],
+        ],
+        "required": ["x", "y"],
+    ],
+    handler: { args in
+        guard let x = (args["x"] as? NSNumber)?.doubleValue, let y = (args["y"] as? NSNumber)?.doubleValue else {
+            throw LookinError.message("Missing required arguments: x, y")
+        }
+        try ControlClient.send(["action": "tap", "x": x, "y": y])
+        return [textContent("Tapped (\(x), \(y)).")]
+    }
+))
+
+server.register(Tool(
+    name: "lookin_long_press",
+    description: "Press and hold at a point (screen points) for a duration, then release. Injects a real touch via LookinServer-Control.",
+    inputSchema: [
+        "type": "object",
+        "properties": [
+            "x": ["type": "number"], "y": ["type": "number"],
+            "duration": ["type": "number", "description": "Seconds to hold (default 0.6)"],
+        ],
+        "required": ["x", "y"],
+    ],
+    handler: { args in
+        guard let x = (args["x"] as? NSNumber)?.doubleValue, let y = (args["y"] as? NSNumber)?.doubleValue else {
+            throw LookinError.message("Missing required arguments: x, y")
+        }
+        var cmd: [String: Any] = ["action": "longPress", "x": x, "y": y]
+        if let d = (args["duration"] as? NSNumber)?.doubleValue { cmd["duration"] = d }
+        try ControlClient.send(cmd)
+        return [textContent("Long-pressed (\(x), \(y)).")]
+    }
+))
+
+server.register(Tool(
+    name: "lookin_swipe",
+    description: "Swipe/drag from one point to another (screen points) over a duration. Injects a real touch via LookinServer-Control. Use to scroll lists or dismiss sheets.",
+    inputSchema: [
+        "type": "object",
+        "properties": [
+            "fromX": ["type": "number"], "fromY": ["type": "number"],
+            "toX": ["type": "number"], "toY": ["type": "number"],
+            "duration": ["type": "number", "description": "Seconds (default 0.3)"],
+        ],
+        "required": ["fromX", "fromY", "toX", "toY"],
+    ],
+    handler: { args in
+        func num(_ k: String) -> Double? { (args[k] as? NSNumber)?.doubleValue }
+        guard let fx = num("fromX"), let fy = num("fromY"), let tx = num("toX"), let ty = num("toY") else {
+            throw LookinError.message("Missing required arguments: fromX, fromY, toX, toY")
+        }
+        var cmd: [String: Any] = ["action": "swipe", "fromX": fx, "fromY": fy, "toX": tx, "toY": ty]
+        if let d = num("duration") { cmd["duration"] = d }
+        try ControlClient.send(cmd)
+        return [textContent("Swiped (\(fx), \(fy)) → (\(tx), \(ty)).")]
+    }
+))
+
+FileHandle.standardError.write("[lookin-swift] started (LookinServer: simulator :47164-47169, USB device :47175-47179; Control :47180)\n".data(using: .utf8)!)
 server.run()
