@@ -12,6 +12,8 @@ swift build -c release
 
 mkdir -p "$DEST_DIR"
 cp "$SCRIPT_DIR/.build/release/lookin-swift" "$DEST_DIR/lookin-swift"
+# Copying invalidates the ad-hoc signature; re-sign so the kernel won't kill it.
+codesign --force --sign - "$DEST_DIR/lookin-swift" 2>/dev/null || true
 echo "Installed: $DEST_DIR/lookin-swift"
 
 echo "Verifying..."
