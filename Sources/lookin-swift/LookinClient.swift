@@ -84,7 +84,8 @@ final class LookinClient {
     static func buildHierarchyJSON(_ info: LKSHierarchyInfo, maxDepth: Int?) throws -> String {
         var count = 0
         let tree = info.displayItems.map { node -> [String: Any] in
-            jsonNode(node, depth: 0, maxDepth: maxDepth, count: &count)
+            jsonNode(node, depth: 0, maxDepth: maxDepth, count: &count,
+                     parentOrigin: .zero, parentBoundsOrigin: .zero)
         }
         let root: [String: Any] = ["totalViews": count, "hierarchy": tree]
         return try jsonString(root)
@@ -357,12 +358,23 @@ final class LookinClient {
 
     // MARK: - JSON
 
-    private static func jsonNode(_ item: LKSDisplayItem, depth: Int, maxDepth: Int?, count: inout Int) -> [String: Any] {
+    /// `frame` is emitted in **absolute screen points** so the coordinate can be
+    /// tapped directly. LookinServer archives each frame relative to its parent,
+    /// so we accumulate down the tree: a child's screen origin is
+    /// parentScreenOrigin + child.frame.origin - parent.bounds.origin (the
+    /// bounds.origin term handles scroll views' content offset).
+    /// ponytail: assumes no rotation/scale transforms in the chain — true for
+    /// virtually all tappable UIKit controls; add transform handling if needed.
+    private static func jsonNode(_ item: LKSDisplayItem, depth: Int, maxDepth: Int?, count: inout Int,
+                                 parentOrigin: CGPoint, parentBoundsOrigin: CGPoint) -> [String: Any] {
         count += 1
+        let sx = parentOrigin.x + item.frame.origin.x - parentBoundsOrigin.x
+        let sy = parentOrigin.y + item.frame.origin.y - parentBoundsOrigin.y
+
         var node: [String: Any] = [
             "oid": item.oid,
             "className": item.lookinClassName,
-            "frame": [item.frame.origin.x, item.frame.origin.y, item.frame.size.width, item.frame.size.height],
+            "frame": [sx, sy, item.frame.size.width, item.frame.size.height],
         ]
         if let viewOid = item.viewOid, viewOid != item.oid { node["viewOid"] = viewOid }
         if item.isHidden { node["hidden"] = true }
@@ -372,8 +384,11 @@ final class LookinClient {
 
         let atMaxDepth = maxDepth.map { depth + 1 >= $0 } ?? false
         if !item.subitems.isEmpty && !atMaxDepth {
+            let childOrigin = CGPoint(x: sx, y: sy)
+            let childParentBounds = item.bounds.origin
             node["children"] = item.subitems.map {
-                jsonNode($0, depth: depth + 1, maxDepth: maxDepth, count: &count)
+                jsonNode($0, depth: depth + 1, maxDepth: maxDepth, count: &count,
+                         parentOrigin: childOrigin, parentBoundsOrigin: childParentBounds)
             }
         }
         return node

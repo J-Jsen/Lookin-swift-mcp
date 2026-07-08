@@ -34,7 +34,7 @@ let oidSchema: [String: Any] = [
 
 server.register(Tool(
     name: "lookin_get_hierarchy",
-    description: "Return the running iOS app's UI view hierarchy tree (oid, className, frame, hidden, alpha) via official LookinServer. Requires the iOS app with LookinServer running in a booted simulator.",
+    description: "Return the running iOS app's UI view hierarchy tree via official LookinServer. Each node has oid, viewOid, className, and frame=[x,y,w,h] in ABSOLUTE SCREEN POINTS — tap a control at its frame center (x+w/2, y+h/2) with lookin_tap, no screenshot math needed. Also hidden/alpha when non-default.",
     inputSchema: [
         "type": "object",
         "properties": [
