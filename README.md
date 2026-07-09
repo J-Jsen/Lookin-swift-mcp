@@ -42,7 +42,7 @@ One command downloads the latest release binary to `~/.lookin-swift/lookin-swift
 clears the Gatekeeper quarantine flag, runs the self-test, and prints the config:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/J-Jsen/Lookin-swift-mcp/main/install-release.sh | bash
+curl -fsSL https://raw.githubusercontent.com/J-Jsen/Lookin-swift-mcp/master/install-release.sh | bash
 ```
 
 The binary is an **unsigned universal** (arm64 + x86_64) Mach-O; the script
